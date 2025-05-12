@@ -250,6 +250,37 @@ Wolf.Menu = (function() {
             e.stopPropagation();
         });
         
+        $("#menu div.menu.main li.savegame").on("click", function(e) {
+            if (!menuInputActive) {
+                return;
+            }
+            
+            if (Wolf.Game.isPlaying()) {
+                Wolf.Game.saveGameState();
+                // Hide the menu and return to game
+                hide();
+                Wolf.Game.resume();
+            } else {
+                // Show message that no game is in progress
+                showMessage("no-game", true);
+            }
+        });
+        
+        $("#menu div.menu.main li.loadgame").on("click", function(e) {
+            if (!menuInputActive) {
+                return;
+            }
+            
+            if (Wolf.Game.loadGameState()) {
+                // Hide the menu and return to game
+                hide();
+                Wolf.Game.resume();
+            } else {
+                // Show message that no saved game exists
+                showMessage("no-savegame", true);
+            }
+        });
+        
         $("#menu div.menu.levels li").on("click", function(e) {
             if (!menuInputActive) {
                 return;

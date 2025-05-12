@@ -572,7 +572,7 @@ Wolf.AI = (function() {
         dy = Math.abs(Wolf.POS2TILE(self.y ) - Wolf.POS2TILE(player.position.y));
         dist = Math.max(dx, dy);
 
-        if (self.type == Wolf.en_ss || self.type == Wolf.en_boss )
+        if (self.type == Wolf.en_ss || self.type == Wolf.en_boss || self.type == Wolf.en_guard)
         {
             dist = dist * 2 / 3;                    // ss are better shots
         }

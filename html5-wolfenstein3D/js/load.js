@@ -92,6 +92,7 @@ $(document).ready(function() {
                     Wolf.Input.init();
                     Wolf.Game.init();
                     Wolf.Menu.show();
+                   
                 });
                 // preload non-essential art
                 Modernizr.load(files2);

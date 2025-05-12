@@ -102,6 +102,8 @@ Wolf.Actors = (function() {
     var add8dir = [4, 5, 6, 7, 0, 1, 2, 3, 0],
         r_add8dir = [4, 7, 6, 5, 0, 1, 2, 3, 0];
 
+
+
     /**
      * @description Create new actor.
      * @memberOf Wolf.Actors
@@ -109,35 +111,36 @@ Wolf.Actors = (function() {
      * @returns {object} The new actor object.
      */
     function getNewActor(level) {
-
         if (level.state.numGuards > Wolf.MAX_GUARDS) {
             return null;
         }
 
         var actor = {
-            x : 0,
-            y : 0,
-            angle : 0,
-            type : 0,
-            health : 0,
-            max_health : 0,
-            speed : 0,
-            ticcount : 0,
-            temp2 : 0,
-            distance : 0,
-            tile : {
-                x : 0,
-                y : 0
+            id: level.state.numGuards, // Use numGuards as ID
+            x: 0,
+            y: 0,
+            angle: 0,
+            type: 0,
+            health: 0,
+            max_health: 0,
+            speed: 0,
+            ticcount: 0,
+            temp2: 0,
+            distance: 0,
+            tile: {
+                x: 0,
+                y: 0
             },
-            areanumber : 0,
-            waitfordoorx : 0, 
-            waitfordoory : 0,   // waiting on this door if non 0
-            flags : 0,            //    FL_SHOOTABLE, etc
-            state : 0,
-            dir : 0,
-            sprite : 0
+            areanumber: 0,
+            waitfordoorx: 0, 
+            waitfordoory: 0,   // waiting on this door if non 0
+            flags: 0,            //    FL_SHOOTABLE, etc
+            state: 0,
+            dir: 0,
+            sprite: 0
         };
-        level.state.guards[level.state.numGuards++] = actor;
+        level.state.guards[level.state.numGuards] = actor;
+        level.state.numGuards++; // Move increment here
         
         return actor;
     }
@@ -278,7 +281,7 @@ Wolf.Actors = (function() {
     function resetGuards(level) {
         level.state.guards = [];
         level.state.numGuards = 0;
-        //New = NULL;
+
     }
 
     /**

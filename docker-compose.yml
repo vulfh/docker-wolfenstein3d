@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  wolfenstein3d:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wolfenstein3d-dev
+    container_name: wolfcontainer-dev
+    ports:
+      - "8888:80"
+    volumes:
+      # This volume mapping allows for live development
+      - ./html5-wolfenstein3D:/usr/share/nginx/html
+    environment:
+      - NGINX_HOST=localhost
+      - NGINX_PORT=80
+    restart: unless-stopped
+    # Add healthcheck to ensure the container is running properly
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s 

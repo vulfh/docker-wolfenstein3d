@@ -1122,7 +1122,7 @@ Wolf.Game = (function() {
             .on("mozfullscreenchange", fullscreenChange)
             .on("webkitfullscreenchange", fullscreenChange)
             .on("fullscreenchange", fullscreenChange);
-            
+ 
         Wolf.Input.bindKey("F11", function(e) {
             if (!keyInputActive) {
                 return;
@@ -1292,6 +1292,166 @@ Wolf.Game = (function() {
     }
     */
    
+    function saveGameState() {
+        if (!playing) {
+            return;
+        }
+        
+        const gameState = {
+            player: {
+                position: currentGame.player.position,
+                angle: currentGame.player.angle,
+                health: currentGame.player.health,
+                score: currentGame.player.score,
+                lives: currentGame.player.lives,
+                ammo: currentGame.player.ammo,
+                weapons: currentGame.player.weapons,
+                items: currentGame.player.items
+            },
+            level: {
+                episodeNum: currentGame.episodeNum,
+                levelNum: currentGame.levelNum,
+                skill: currentGame.skill
+            },
+            // Save actor states with their IDs
+            actors: currentGame.level.state.guards
+                .filter(guard => guard) // Filter out any null entries
+                .map(guard => ({
+                    id: guard.id, // Save the actor ID
+                    type: guard.type,
+                    state: guard.state || 0,
+                    health: guard.health || 0,
+                    position: {
+                        x: guard.x || 0,
+                        y: guard.y || 0
+                    },
+                    angle: guard.angle || 0,
+                    isDead: guard.state === Wolf.st_dead || guard.health <= 0 || guard.isDead
+                })),
+            timestamp: new Date().toISOString()
+        };
+        
+        try {
+            localStorage.setItem('wolfenstein_savegame', JSON.stringify(gameState));
+            // Show a confirmation message
+            $("#menu .message.savegame").show();
+            setTimeout(() => {
+                $("#menu .message.savegame").hide();
+            }, 2000);
+        } catch (e) {
+            console.error('Failed to save game:', e);
+        }
+    }
+   
+    function loadGameState() {
+        try {
+            const savedGame = localStorage.getItem('wolfenstein_savegame');
+            if (!savedGame) {
+                return false;
+            }
+
+            const gameState = JSON.parse(savedGame);
+            
+            // Start a new game with the saved skill level
+            const game = startGame(gameState.level.skill);
+            
+            // Set the episode and level numbers
+            game.episodeNum = gameState.level.episodeNum;
+            game.levelNum = gameState.level.levelNum;
+            
+            // Load the level
+            Wolf.Level.load(Wolf.Episodes[game.episodeNum].levels[game.levelNum].file, function(error, level) {
+                if (error) {
+                    throw error;
+                }
+                
+                game.level = level;
+                
+                // First scan the info plane to spawn all actors
+                Wolf.Level.scanInfoPlane(level, game.skill);
+                
+                // Create a map of actor positions to their saved states
+                const savedActorMap = new Map();
+                if (gameState.actors) {
+                    gameState.actors.forEach(savedActor => {
+                        savedActorMap.set(savedActor.id, savedActor);
+                    });
+                }
+                
+                // Restore actor states using IDs
+                level.state.guards.forEach(actor => {
+                    if (!actor) return;
+                    
+                    const savedActor = savedActorMap.get(actor.id);
+                    if (savedActor) {
+                        if (savedActor.isDead || savedActor.health <= 0) {
+                            // Start the death sequence
+                            actor.state = Wolf.st_die1;
+                            actor.health = 0;
+                            actor.speed = 0;
+                            actor.ticcount = Wolf.objstate[actor.type][Wolf.st_die1].timeout;
+                            actor.flags &= ~Wolf.FL_SHOOTABLE;
+                            actor.isDead = true;
+                            
+                            // Set the initial death sprite
+                            Wolf.Sprites.setTex(level, actor.sprite, 0, Wolf.objstate[actor.type][Wolf.st_die1].texture);
+                            
+                            // Force the death sequence to complete immediately
+                            actor.state = Wolf.st_die2;
+                            Wolf.Sprites.setTex(level, actor.sprite, 0, Wolf.objstate[actor.type][Wolf.st_die2].texture);
+                            
+                            actor.state = Wolf.st_die3;
+                            Wolf.Sprites.setTex(level, actor.sprite, 0, Wolf.objstate[actor.type][Wolf.st_die3].texture);
+                            
+                            // Finally set to dead state
+                            actor.state = Wolf.st_dead;
+                            Wolf.Sprites.setTex(level, actor.sprite, 0, Wolf.objstate[actor.type][Wolf.st_dead].texture);
+                        } else {
+                            // Restore actor state for living actors
+                            actor.state = savedActor.state;
+                            actor.health = savedActor.health;
+                            actor.angle = savedActor.angle;
+                            actor.speed = (actor.type == Wolf.en_dog) ? Wolf.SPDDOG : Wolf.SPDPATROL;
+                            actor.flags |= Wolf.FL_SHOOTABLE;
+                        }
+                    }
+                });
+                
+                // Restore player state
+                game.player = Wolf.Player.spawn(level.spawn, level, game.skill);
+                game.player.position = gameState.player.position;
+                game.player.angle = gameState.player.angle;
+                game.player.health = gameState.player.health;
+                game.player.score = gameState.player.score;
+                game.player.lives = gameState.player.lives;
+                game.player.ammo = gameState.player.ammo;
+                game.player.weapons = gameState.player.weapons;
+                game.player.items = gameState.player.items;
+                
+                // Start the game
+                playing = true;
+                startGameCycle(game);
+                startRenderCycle(game);
+                Wolf.Input.reset();
+                Wolf.Input.lockPointer();
+                
+                $("#game").focus();
+                $("#game .renderer .player-weapon").show();
+                keyInputActive = true;
+                
+                // Start the level music
+                if (level.music) {
+                    Wolf.Sound.startMusic(level.music);
+                }
+            });
+            
+            return true;
+        } catch (e) {
+            console.error('Failed to load game:', e);
+            return false;
+        }
+    }
+   
     return {
         startGame : startGame,
         startLevel : startLevel,
@@ -1308,7 +1468,9 @@ Wolf.Game = (function() {
         bindControl : bindControl,
         resume : resume,
         victory : victory,
-        endEpisode : endEpisode
+        endEpisode : endEpisode,
+        saveGameState : saveGameState,
+        loadGameState : loadGameState
         
         /*
         dump : dump,
