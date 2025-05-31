@@ -587,7 +587,7 @@ Wolf.Game = (function() {
 
         var episode = Wolf.Episodes[game.episodeNum];
         
-        Wolf.Level.load(episode.levels[game.levelNum].file, function(error, level) {
+        Wolf.Level.load(episode.levels[game.levelNum].file, {},function(error, level) {
             if (error) {
                 throw error;
             }
@@ -1293,53 +1293,139 @@ Wolf.Game = (function() {
     */
    
     function saveGameState() {
-        if (!playing) {
-            return;
-        }
-        
-        const gameState = {
-            player: {
-                position: currentGame.player.position,
-                angle: currentGame.player.angle,
-                health: currentGame.player.health,
-                score: currentGame.player.score,
-                lives: currentGame.player.lives,
-                ammo: currentGame.player.ammo,
-                weapons: currentGame.player.weapons,
-                items: currentGame.player.items
-            },
-            level: {
-                episodeNum: currentGame.episodeNum,
-                levelNum: currentGame.levelNum,
-                skill: currentGame.skill
-            },
-            // Save actor states with their IDs
-            actors: currentGame.level.state.guards
-                .filter(guard => guard) // Filter out any null entries
-                .map(guard => ({
-                    id: guard.id, // Save the actor ID
-                    type: guard.type,
-                    state: guard.state || 0,
-                    health: guard.health || 0,
-                    position: {
-                        x: guard.x || 0,
-                        y: guard.y || 0
-                    },
-                    angle: guard.angle || 0,
-                    isDead: guard.state === Wolf.st_dead || guard.health <= 0 || guard.isDead
-                })),
-            timestamp: new Date().toISOString()
-        };
-        
         try {
+            // Check if currentGame and player are properly initialized
+            if (!currentGame || !currentGame.player) {
+                console.error('Cannot save game: Game or player not initialized');
+                return false;
+            }
+
+            const gameState = {
+                level: {
+                    episodeNum: currentGame.episodeNum,
+                    levelNum: currentGame.levelNum,
+                    skill: currentGame.skill
+                },
+                player: {
+                    position: currentGame.player.position,
+                    angle: currentGame.player.angle,
+                    health: currentGame.player.health,
+                    score: currentGame.player.score,
+                    lives: currentGame.player.lives,
+                    ammo: currentGame.player.ammo,
+                    weapons: currentGame.player.weapons,
+                    items: currentGame.player.items
+                },
+                levelAssets: {
+                    collectedItems: {
+                        ammo: currentGame.player.ammo[Wolf.AMMO_BULLETS],
+                        weapons: currentGame.player.weapons,
+                        keys: {
+                            key1: !!(currentGame.player.items & Wolf.ITEM_KEY_1),
+                            key2: !!(currentGame.player.items & Wolf.ITEM_KEY_2)
+                        },
+                        specialItems: {
+                            backpack: !!(currentGame.player.items & Wolf.ITEM_BACKPACK),
+                            augment: !!(currentGame.player.items & Wolf.ITEM_AUGMENT),
+                            uniform: !!(currentGame.player.items & Wolf.ITEM_UNIFORM),
+                            automap: !!(currentGame.player.items & Wolf.ITEM_AUTOMAP)
+                        }
+                    },
+                    statistics: {
+                        startTime: currentGame.level.state.startTime,
+                        elapsedTime: currentGame.level.state.elapsedTime
+                    },
+                    collectibles: {
+                        treasures: {
+                            total: currentGame.level.state.totalTreasure,
+                            found: currentGame.level.state.foundTreasure,
+                            items: currentGame.level.state.powerups
+                                .filter(powerup => powerup && powerup.id !== null && (
+                                    powerup.type === Wolf.pow_cross ||
+                                    powerup.type === Wolf.pow_chalice ||
+                                    powerup.type === Wolf.pow_bible ||
+                                    powerup.type === Wolf.pow_crown ||
+                                    powerup.type === Wolf.pow_fullheal
+                                ))
+                                .map(powerup => ({
+                                    id: powerup.id,
+                                    type: powerup.type,
+                                    position: {
+                                        x: powerup.x,
+                                        y: powerup.y
+                                    },
+                                    collected: powerup.x === -1,
+                                    value: powerup.value
+                                 
+                                }))
+                        },
+                        healthItems: {
+                            items: currentGame.level.state.powerups
+                                .filter(powerup => powerup && (
+                                    powerup.type === Wolf.pow_alpo ||
+                                    powerup.type === Wolf.pow_food ||
+                                    powerup.type === Wolf.pow_firstaid ||
+                                    powerup.type === Wolf.pow_fullheal ||
+                                    powerup.type === Wolf.pow_gibs ||
+                                    powerup.type === Wolf.pow_gibs2
+                                ))
+                                .map(powerup => ({
+                                    id: powerup.id,
+                                    type: powerup.type,
+                                    position: {
+                                        x: powerup.x,
+                                        y: powerup.y
+                                    },
+                                    collected: powerup.x === -1,
+                                    // effect: getHealthItemEffect(powerup.type)
+                                }))
+                        },
+                        powerups: {
+                            total: currentGame.level.state.numPowerups,
+                            items: currentGame.level.state.powerups
+                                .filter(powerup => powerup && (
+                                    powerup.type === Wolf.pow_25clip ||
+                                    powerup.type === Wolf.pow_chaingun ||
+                                    powerup.type === Wolf.pow_machinegun ||
+                                    powerup.type === Wolf.pow_rifle ||
+                                    powerup.type === Wolf.pow_clip ||
+                                    powerup.type === Wolf.pow_clip2
+                                ))
+                                .map(powerup => ({
+                                    id: powerup.id,
+                                    type: powerup.type,
+                                    position: {
+                                        x: powerup.x,
+                                        y: powerup.y
+                                    },
+                                    collected: powerup.x === -1,
+                                    // effect: getPowerupEffect(powerup.type)
+                                }))
+                        }
+                    }
+                },
+                actors: currentGame.level.state.guards.map(actor => {
+                    if (!actor) return null;
+                    return {
+                        id: actor.id,
+                        type: actor.type,
+                        state: actor.state,
+                        health: actor.health,
+                        isDead: actor.isDead,
+                        position: {
+                            x: actor.x,
+                            y: actor.y
+                        },
+                        angle: actor.angle
+                    };
+                }).filter(actor => actor !== null)
+            };
+
             localStorage.setItem('wolfenstein_savegame', JSON.stringify(gameState));
-            // Show a confirmation message
-            $("#menu .message.savegame").show();
-            setTimeout(() => {
-                $("#menu .message.savegame").hide();
-            }, 2000);
+            return true;
         } catch (e) {
             console.error('Failed to save game:', e);
+            return false;
         }
     }
    
@@ -1359,13 +1445,47 @@ Wolf.Game = (function() {
             game.episodeNum = gameState.level.episodeNum;
             game.levelNum = gameState.level.levelNum;
             
+            // Create a map of saved powerup states
+            const savedPowerups = {};
+            if (gameState.levelAssets && gameState.levelAssets.collectibles) {
+                // Add treasure items
+                if (gameState.levelAssets.collectibles.treasures && gameState.levelAssets.collectibles.treasures.items) {
+                    gameState.levelAssets.collectibles.treasures.items.forEach(powerup => {
+                        savedPowerups[powerup.id] = {
+                            collected: powerup.collected
+                        };
+                    });
+                }
+                // Add health items
+                if (gameState.levelAssets.collectibles.healthItems && gameState.levelAssets.collectibles.healthItems.items) {
+                    gameState.levelAssets.collectibles.healthItems.items.forEach(powerup => {
+                        savedPowerups[powerup.id] = {
+                            collected: powerup.collected
+                        };
+                    });
+                }
+                // Add weapon/ammo powerups
+                if (gameState.levelAssets.collectibles.powerups && gameState.levelAssets.collectibles.powerups.items) {
+                    gameState.levelAssets.collectibles.powerups.items.forEach(powerup => {
+                        savedPowerups[powerup.id] = {
+                            collected: powerup.collected
+                        };
+                    });
+                }
+            }
+            
             // Load the level
-            Wolf.Level.load(Wolf.Episodes[game.episodeNum].levels[game.levelNum].file, function(error, level) {
+            Wolf.Level.load(Wolf.Episodes[game.episodeNum].levels[game.levelNum].file, {
+                powerups: savedPowerups
+            },function(error, level) {
                 if (error) {
                     throw error;
                 }
                 
                 game.level = level;
+                
+                // Store saved powerup states in level
+                level.state.savedPowerups = savedPowerups;
                 
                 // First scan the info plane to spawn all actors
                 Wolf.Level.scanInfoPlane(level, game.skill);
