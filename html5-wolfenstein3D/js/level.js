@@ -171,10 +171,11 @@ Wolf.Level = (function() {
     /**
      * @description Parse map file data.
      * @private
-     * @param {object} file The file object
+     * @param {object} file The file object 
+     * @param {object} loadedState The loaded state object
      * @returns {object} The new level object
      */
-    function parseMapData(file) {
+    function parseMapData(file,loadedState) {
         var F = Wolf.File,
             level = newLevel(),
             length, offset,
@@ -186,6 +187,13 @@ Wolf.Level = (function() {
         file.position = 0;
             
         level.file = file;
+        
+        // Initialize level state with saved state
+        if (loadedState) {
+            level.state.savedTreasures = loadedState.treasures || {};
+            level.state.savedPowerups = loadedState.powerups || {};
+            level.state.savedHealthItems = loadedState.healthItems || {};
+        }
         
         if (file.size < Wolf.MAPHEADER_SIZE) {
             throw new Error("Map file size is smaller than mapheader size");
@@ -276,6 +284,25 @@ Wolf.Level = (function() {
 
                 // if server, process obj layer!
                 if (layer2) {
+                    // Filter items based on loaded state before spawning
+                    if (loadedState) {
+                        const itemKey = `${x},${y}`;
+                        
+                        // Check powerups
+                        if (loadedState.powerups && loadedState.powerups[itemKey] && loadedState.powerups[itemKey].collected) {
+                            return;
+                        }
+                        
+                        // Check treasures
+                        if (loadedState.treasures && loadedState.treasures[itemKey] && loadedState.treasures[itemKey].collected) {
+                            return;
+                        }
+                        
+                        // Check health items
+                        if (loadedState.healthItems && loadedState.healthItems[itemKey] && loadedState.healthItems[itemKey].collected) {
+                            return;
+                        }
+                    }
                     spawnObj(level, layer2, x, y);
                 }
 
@@ -470,17 +497,18 @@ Wolf.Level = (function() {
      * @description Load level data
      * @memberOf Wolf.Level
      * @param {string} filename The name of the level file.
+     * @param {object} loadedState The loaded state object.
      * @param {function} callback Called with the resulting level object.
      * @returns {object} The level object.
      */
-    function load(filename, callback) {
+    function load(filename,loadedState, callback) {
         Wolf.File.open(filename, Wolf.MapData, function(error, file) {
             var level;
             if (error) {
                 callback(error);
             }
             try {
-                level = parseMapData(file);
+                level = parseMapData(file,loadedState);
             } catch(error) {
                 callback(error);
                 return;
@@ -592,10 +620,23 @@ Wolf.Level = (function() {
             Wolf.Sprites.setTex(level, sprite, 0, Wolf.SPR_STAT_0 + type);
         } else {
             pu = statinfo[type].powerup;
+            
+            // Check if this is a treasure
+            const isTreasure = (pu == Wolf.pow_cross || pu == Wolf.pow_chalice || pu == Wolf.pow_bible || pu == Wolf.pow_crown || pu == Wolf.pow_fullheal);
+            
+            // Only spawn if not collected in loaded state
+            const itemKey = `${x},${y}`;
+            if (isTreasure && level.state.savedTreasures && level.state.savedTreasures[itemKey] && level.state.savedTreasures[itemKey].collected) {
+                return;
+            }
+            
             Wolf.Powerups.spawn(level, x, y, pu);
             
-            if (pu == Wolf.pow_cross || pu == Wolf.pow_chalice || pu == Wolf.pow_bible || pu == Wolf.pow_crown || pu == Wolf.pow_fullheal) {
-                level.state.totalTreasure++; // FIXME: move this to Powerup_Spawn Function!
+            if (isTreasure) {
+                level.state.totalTreasure++;
+                // Initialize treasures state if needed
+                level.state.treasures = level.state.treasures || {};
+                level.state.treasures[itemKey] = { collected: false };
             }
         }
     }

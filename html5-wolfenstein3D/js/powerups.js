@@ -1,4 +1,3 @@
-
 Wolf.Powerups = (function() {
 
     Wolf.setConsts({
@@ -77,7 +76,8 @@ Wolf.Powerups = (function() {
             x : -1,
             y : -1,
             type : 0,
-            sprite : null
+            sprite : null,
+            id:level.state.numPowerups
         };
         
         level.state.powerups[level.state.numPowerups-1] = newp;
@@ -93,14 +93,21 @@ Wolf.Powerups = (function() {
     // x,y are in TILES.
     function spawn(level, x, y, type) {
         var newp = addNew(level);
-
-        newp.sprite = Wolf.Sprites.getNewSprite(level);
         newp.type = type;
-       
-        Wolf.Sprites.setPos(level, newp.sprite, Wolf.TILE2POS(newp.x = x), Wolf.TILE2POS(newp.y = y), 0);
+        newp.x = x;
+        newp.y = y;
 
+        // Check if this powerup was already collected in the saved game state
+        if (level.state.savedPowerups && level.state.savedPowerups[newp.id] && level.state.savedPowerups[newp.id].collected) {
+            // If collected, mark it as removed but don't create sprite
+            remove(level, newp);
+            return;
+        }
+
+        // Only create sprite and allocate in level if not collected
+        newp.sprite = Wolf.Sprites.getNewSprite(level);
+        Wolf.Sprites.setPos(level, newp.sprite, Wolf.TILE2POS(x), Wolf.TILE2POS(y), 0);
         Wolf.Sprites.setTex(level, newp.sprite, -1, texture[type]);
-        
         level.tileMap[x][y] |= Wolf.POWERUP_TILE;
         // good place to update total treasure count!
     }
@@ -259,6 +266,7 @@ Wolf.Powerups = (function() {
                     p_pick = true;
                     Wolf.Sprites.remove(level, pow.sprite);
                     remove(level, pow);
+                    pow.collected = true;   
                 } else {
                     // player do not need it, so may be next time!
                     p_left = true;
