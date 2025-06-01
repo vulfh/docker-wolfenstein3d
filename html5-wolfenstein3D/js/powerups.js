@@ -282,6 +282,161 @@ Wolf.Powerups = (function() {
     }
    
     
+    function collectPowerup(level, powerup) {
+        var player = level.player;
+        
+        // Check if this is a treasure
+        const isTreasure = (powerup.type === Wolf.pow_cross || 
+                           powerup.type === Wolf.pow_chalice || 
+                           powerup.type === Wolf.pow_bible || 
+                           powerup.type === Wolf.pow_crown || 
+                           powerup.type === Wolf.pow_fullheal);
+        
+        if (isTreasure) {
+            // Update treasure statistics
+            level.state.foundTreasure++;
+            // Mark treasure as collected in state
+            const itemKey = `${powerup.x},${powerup.y}`;
+            if (level.state.treasures && level.state.treasures[itemKey]) {
+                level.state.treasures[itemKey].collected = true;
+            }
+        }
+        
+        switch (powerup.type) {
+            // Keys
+            case Wolf.pow_key1:
+            case Wolf.pow_key2:
+            case Wolf.pow_key3:
+            case Wolf.pow_key4:
+                type -= Wolf.pow_key1;
+                Wolf.Player.giveKey(player, type);
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/012.wav", 1, Wolf.ATTN_NORM, 0);
+                Wolf.Game.notify(keynames[type] + " key");
+                break;
+            // Treasure
+            case Wolf.pow_cross:
+                Wolf.Player.givePoints(player, 100);
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/035.wav", 1, Wolf.ATTN_NORM, 0);
+                if ( ++level.state.foundTreasure == level.state.totalTreasure ) {
+                    Wolf.Game.notify("You found the last treasure!");
+                }
+                break;
+
+            case Wolf.pow_chalice:
+                Wolf.Player.givePoints(player, 500);
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/036.wav", 1, Wolf.ATTN_NORM, 0);
+                if (++level.state.foundTreasure == level.state.totalTreasure) {
+                    Wolf.Game.notify("You found the last treasure!");
+                }
+                break;
+
+            case Wolf.pow_bible:
+                Wolf.Player.givePoints(player, 1000);
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/037.wav", 1, Wolf.ATTN_NORM, 0);
+                if (++level.state.foundTreasure == level.state.totalTreasure) {
+                    Wolf.Game.notify("You found the last treasure!");
+                }
+                break;
+
+            case Wolf.pow_crown:
+                Wolf.Player.givePoints(player, 5000);
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/045.wav", 1, Wolf.ATTN_NORM, 0);
+                if (++level.state.foundTreasure == level.state.totalTreasure) {
+                    Wolf.Game.notify("You found the last treasure!");
+                }
+                break;
+
+            // Health
+            case Wolf.pow_gibs:
+                if (!Wolf.Player.giveHealth(player, 1, 11)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/061.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            case Wolf.pow_alpo:
+                if (!Wolf.Player.giveHealth(player, 4, 0)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/033.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            case Wolf.pow_food:
+                if (!Wolf.Player.giveHealth(player, 10, 0)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/033.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            case Wolf.pow_firstaid:
+                if (!Wolf.Player.giveHealth(player, 25, 0)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/034.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            // Weapon & Ammo
+            case Wolf.pow_clip:
+                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 8)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/031.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            case Wolf.pow_clip2:
+                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 4)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/031.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            case Wolf.pow_25clip:
+                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 25)) {
+                    return false;
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/031.wav", 1, Wolf.ATTN_NORM, 0);
+                break;
+
+            case Wolf.pow_machinegun:
+                Wolf.Player.giveWeapon(player, Wolf.WEAPON_AUTO );
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/030.wav", 1, Wolf.ATTN_NORM, 0);
+                Wolf.Game.notify("Machinegun");
+                break;
+
+            case Wolf.pow_chaingun:
+                Wolf.Player.giveWeapon(player, Wolf.WEAPON_CHAIN );
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/038.wav", 1, Wolf.ATTN_NORM, 0);
+                Wolf.Game.notify("Chaingun");
+
+                player.faceCount = -100;
+                player.faceGotGun = true;
+                break;
+
+            // Artifacts
+            case Wolf.pow_fullheal:
+                // go to 150 health
+                Wolf.Player.giveHealth(player, 99, 99 );
+                Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 25 );
+                Wolf.Player.giveLife(player);
+                if (++level.state.foundTreasure == level.state.totalTreasure) {
+                    Wolf.Game.notify("You found the last treasure!");
+                } else {
+                    Wolf.Game.notify("Full Heal");
+                }
+                Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/034.wav", 1, Wolf.ATTN_NORM, 0);
+                Wolf.log("Extra life!");
+                break;
+                
+            default:
+                Wolf.log("Warning: Unknown item type: " + type);
+                break;
+        }
+
+        Wolf.Game.startBonusFlash();
+        
+        return true;
+    }
+
     return {
         spawn : spawn,
         reset : reset,

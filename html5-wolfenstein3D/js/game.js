@@ -1333,7 +1333,13 @@ Wolf.Game = (function() {
                     },
                     statistics: {
                         startTime: currentGame.level.state.startTime,
-                        elapsedTime: currentGame.level.state.elapsedTime
+                        elapsedTime: currentGame.level.state.elapsedTime,
+                        totalMonsters: currentGame.level.state.totalMonsters,
+                        killedMonsters: currentGame.level.state.killedMonsters,
+                        totalSecrets: currentGame.level.state.totalSecrets,
+                        foundSecrets: currentGame.level.state.foundSecrets,
+                        totalTreasure: currentGame.level.state.totalTreasure,
+                        foundTreasure: currentGame.level.state.foundTreasure
                     },
                     collectibles: {
                         treasures: {
@@ -1487,8 +1493,24 @@ Wolf.Game = (function() {
                 // Store saved powerup states in level
                 level.state.savedPowerups = savedPowerups;
                 
+                // Restore statistics if they exist in the saved state
+                if (gameState.levelAssets && gameState.levelAssets.statistics) {
+                    const stats = gameState.levelAssets.statistics;
+                    level.state.totalMonsters = stats.totalMonsters || 0;
+                    level.state.killedMonsters = stats.killedMonsters || 0;
+                    level.state.totalSecrets = stats.totalSecrets || 0;
+                    level.state.foundSecrets = stats.foundSecrets || 0;
+                    level.state.totalTreasure = stats.totalTreasure || 0;
+                    level.state.foundTreasure = stats.foundTreasure || 0;
+                    level.state.startTime = stats.startTime || Date.now();
+                    level.state.elapsedTime = stats.elapsedTime || 0;
+                }
+                
                 // First scan the info plane to spawn all actors
+                // Set a flag to prevent incrementing totalMonsters during spawn
+                level.state.isLoadingSavedGame = true;
                 Wolf.Level.scanInfoPlane(level, game.skill);
+                level.state.isLoadingSavedGame = false;
                 
                 // Create a map of actor positions to their saved states
                 const savedActorMap = new Map();
