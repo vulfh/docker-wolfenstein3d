@@ -368,7 +368,9 @@ Wolf.Actors = (function() {
         self.ticcount = Wolf.objstate[which][Wolf.st_path1].timeout ? Wolf.Random.rnd() % Wolf.objstate[which][Wolf.st_path1].timeout + 1 : 0;
         self.flags |= Wolf.FL_SHOOTABLE;
 
-        level.state.totalMonsters++;
+        if (!level.state.isLoadingSavedGame) {
+            level.state.totalMonsters++;
+        }
     }
 
     /**
@@ -395,7 +397,9 @@ Wolf.Actors = (function() {
             self.flags |= Wolf.FL_AMBUSH;
         }
 
-        level.state.totalMonsters++;
+        if (!level.state.isLoadingSavedGame) {
+            level.state.totalMonsters++;
+        }
     }
     
     function spawnBoss(level, skill, which, x, y) {
@@ -441,7 +445,9 @@ Wolf.Actors = (function() {
         self.ticcount = Wolf.objstate[which][Wolf.st_stand].timeout ? Wolf.Random.rnd() % Wolf.objstate[which][Wolf.st_stand].timeout + 1 : 0;
         self.flags |= Wolf.FL_SHOOTABLE | Wolf.FL_AMBUSH;
 
-        level.state.totalMonsters++;
+        if (!level.state.isLoadingSavedGame) {
+            level.state.totalMonsters++;
+        }
     }
     
     
@@ -457,7 +463,9 @@ Wolf.Actors = (function() {
         self.ticcount = Wolf.objstate[which][Wolf.st_chase1].timeout ? Wolf.Random.rnd() % Wolf.objstate[which][Wolf.st_chase1].timeout + 1: 0;
         self.flags |= Wolf.FL_AMBUSH;
 
-        level.state.totalMonsters++;
+        if (!level.state.isLoadingSavedGame) {
+            level.state.totalMonsters++;
+        }
     }
     
     function spawnBJVictory(player, level, skill) {
