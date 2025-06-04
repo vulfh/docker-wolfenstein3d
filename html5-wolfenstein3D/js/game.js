@@ -1307,7 +1307,9 @@ Wolf.Game = (function() {
                     skill: currentGame.skill,
                     tileMap: currentGame.level.tileMap.map(row => [...row]), // Deep copy of tileMap
                     wallTexX: currentGame.level.wallTexX.map(row => [...row]), // Deep copy of wall textures X
-                    wallTexY: currentGame.level.wallTexY.map(row => [...row])  // Deep copy of wall textures Y
+                    wallTexY: currentGame.level.wallTexY.map(row => [...row]),  // Deep copy of wall textures Y
+                    floor: [...currentGame.level.floor], // Save floor color
+                    ceiling: [...currentGame.level.ceiling] // Save ceiling color
                 },
                 player: {
                     position: currentGame.player.position,
@@ -1488,7 +1490,9 @@ Wolf.Game = (function() {
                 powerups: savedPowerups,
                 tileMap: gameState.level.tileMap, // Pass the saved tileMap state
                 wallTexX: gameState.level.wallTexX, // Pass the saved wall textures X
-                wallTexY: gameState.level.wallTexY  // Pass the saved wall textures Y
+                wallTexY: gameState.level.wallTexY,  // Pass the saved wall textures Y
+                floor: gameState.level.floor, // Pass the saved floor color
+                ceiling: gameState.level.ceiling // Pass the saved ceiling color
             },function(error, level) {
                 if (error) {
                     throw error;
@@ -1513,6 +1517,26 @@ Wolf.Game = (function() {
                             level.wallTexY[x][y] = gameState.level.wallTexY[x][y];
                         }
                     }
+                }
+                
+                // Restore floor and ceiling colors if they exist
+                if (gameState.level.floor && gameState.level.ceiling) {
+                    level.floor = [...gameState.level.floor];
+                    level.ceiling = [...gameState.level.ceiling];
+                    
+                    $("#game .renderer .floor").css({
+                        "background-color" : "rgb("
+                            + level.floor[0] + ","
+                            + level.floor[1] + ","
+                            + level.floor[2] + ")"
+                    });
+                    
+                    $("#game .renderer .ceiling").css({
+                        "background-color" : "rgb("
+                            + level.ceiling[0] + ","
+                            + level.ceiling[1] + ","
+                            + level.ceiling[2] + ")"
+                    });
                 }
                 
                 // Store saved powerup states in level
