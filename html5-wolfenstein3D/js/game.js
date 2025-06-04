@@ -1304,7 +1304,10 @@ Wolf.Game = (function() {
                 level: {
                     episodeNum: currentGame.episodeNum,
                     levelNum: currentGame.levelNum,
-                    skill: currentGame.skill
+                    skill: currentGame.skill,
+                    tileMap: currentGame.level.tileMap.map(row => [...row]), // Deep copy of tileMap
+                    wallTexX: currentGame.level.wallTexX.map(row => [...row]), // Deep copy of wall textures X
+                    wallTexY: currentGame.level.wallTexY.map(row => [...row])  // Deep copy of wall textures Y
                 },
                 player: {
                     position: currentGame.player.position,
@@ -1482,13 +1485,35 @@ Wolf.Game = (function() {
             
             // Load the level
             Wolf.Level.load(Wolf.Episodes[game.episodeNum].levels[game.levelNum].file, {
-                powerups: savedPowerups
+                powerups: savedPowerups,
+                tileMap: gameState.level.tileMap, // Pass the saved tileMap state
+                wallTexX: gameState.level.wallTexX, // Pass the saved wall textures X
+                wallTexY: gameState.level.wallTexY  // Pass the saved wall textures Y
             },function(error, level) {
                 if (error) {
                     throw error;
                 }
                 
                 game.level = level;
+                
+                // Restore the saved tileMap state if it exists
+                if (gameState.level.tileMap) {
+                    for (let x = 0; x < 64; x++) {
+                        for (let y = 0; y < 64; y++) {
+                            level.tileMap[x][y] = gameState.level.tileMap[x][y];
+                        }
+                    }
+                }
+                
+                // Restore the saved wall textures if they exist
+                if (gameState.level.wallTexX) {
+                    for (let x = 0; x < 64; x++) {
+                        for (let y = 0; y < 64; y++) {
+                            level.wallTexX[x][y] = gameState.level.wallTexX[x][y];
+                            level.wallTexY[x][y] = gameState.level.wallTexY[x][y];
+                        }
+                    }
+                }
                 
                 // Store saved powerup states in level
                 level.state.savedPowerups = savedPowerups;
