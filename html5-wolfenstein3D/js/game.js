@@ -1149,12 +1149,113 @@ Wolf.Game = (function() {
             if (!keyInputActive) {
                 return;
             }
+            // If map screen is visible, hide it
+            if ($("#game .renderer .map-screen").is(":visible")) {
+                $("#game .renderer .map-screen").hide();
+                return;
+            }
             exitToMenu();
+        });
+
+        Wolf.Input.bindKey("M", function(e) {
+            if (!keyInputActive) {
+                return;
+            }
+            // Toggle map screen
+            var mapScreen = $("#game .renderer .map-screen");
+            if (mapScreen.is(":visible")) {
+                mapScreen.hide();
+            } else {
+                mapScreen.show();
+                renderMap();
+            }
         });
        
         if (!isFullscreen() && (window.fullScreen || (window.innerWidth == screen.width && window.innerHeight == screen.height))) {
             toggleFullscreen();
         }
+    }
+    
+    function renderMap() {
+        var mapScreen = $("#game .renderer .map-screen");
+        var canvas = mapScreen.find("canvas");
+        
+        // Create canvas if it doesn't exist
+        if (canvas.length === 0) {
+            canvas = $("<canvas>");
+            mapScreen.append(canvas);
+        }
+
+        // Set canvas size to 80% of the smaller screen dimension
+        var size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+        canvas.attr("width", size);
+        canvas.attr("height", size);
+        
+        var ctx = canvas[0].getContext("2d");
+        var level = currentGame.level;
+        var player = currentGame.player;
+        
+        // Clear canvas with gray background
+        ctx.fillStyle = "#444";
+        ctx.fillRect(0, 0, size, size);
+        
+        // Calculate cell size to fit the level
+        var levelWidth = 64; // Standard level width
+        var levelHeight = 64; // Standard level height
+        
+        // Calculate cell size with some padding
+        var padding = 20; // pixels of padding around the map
+        var availableWidth = size - (padding * 2);
+        var availableHeight = size - (padding * 2);
+        var cellSize = Math.min(availableWidth / levelWidth, availableHeight / levelHeight);
+        
+        // Calculate centering offsets with padding
+        var offsetX = padding + (availableWidth - (levelWidth * cellSize)) / 2;
+        var offsetY = padding + (availableHeight - (levelHeight * cellSize)) / 2;
+        
+        // Draw secret areas first (as background)
+        for (var x = 0; x < levelWidth; x++) {
+            for (var y = levelHeight - 1; y >= 0; y--) {
+                if (level.tileMap[x][y] & Wolf.SECRET_TILE) {
+                    ctx.fillStyle = "#ff0";
+                    ctx.fillRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+        
+        // Draw walls as black lines
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        
+        for (var x = 0; x < levelWidth; x++) {
+            for (var y = levelHeight - 1; y >= 0; y--) {
+                if (level.tileMap[x][y] & Wolf.SOLID_TILE) {
+                    // Draw cell border
+                    ctx.strokeRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+        
+        // Draw player position
+        var playerX = offsetX + (player.position.x >> Wolf.TILESHIFT) * cellSize;
+        var playerY = offsetY + (levelHeight - 1 - (player.position.y >> Wolf.TILESHIFT)) * cellSize;
+        
+        // Draw filled circle for player position
+        ctx.fillStyle = "#f00";
+        ctx.beginPath();
+        ctx.arc(playerX + cellSize/2, playerY + cellSize/2, cellSize/2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw player direction
+        ctx.strokeStyle = "#f00";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(playerX + cellSize/2, playerY + cellSize/2);
+        ctx.lineTo(
+            playerX + cellSize/2 + Math.cos(Wolf.FINE2RAD(player.angle)) * cellSize,
+            playerY + cellSize/2 + Math.sin(Wolf.FINE2RAD(player.angle)) * cellSize
+        );
+        ctx.stroke();
     }
     
     /**
