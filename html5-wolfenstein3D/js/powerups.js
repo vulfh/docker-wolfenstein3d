@@ -91,14 +91,14 @@ Wolf.Powerups = (function() {
     }
     
     // x,y are in TILES.
-    function spawn(level, x, y, type) {
+    function spawn(level, x, y, type,bandNew=false) {
         var newp = addNew(level);
         newp.type = type;
         newp.x = x;
         newp.y = y;
 
         // Check if this powerup was already collected in the saved game state
-        if (level.state.savedPowerups && level.state.savedPowerups[newp.id] && level.state.savedPowerups[newp.id].collected) {
+        if (!bandNew && level.state.savedPowerups && level.state.savedPowerups[newp.id] && level.state.savedPowerups[newp.id].collected) {
             // If collected, mark it as removed but don't create sprite
             remove(level, newp);
             return;

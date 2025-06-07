@@ -443,25 +443,25 @@ Wolf.ActorAI = (function() {
         switch (self.type) {
             case Wolf.en_guard:
                 Wolf.Player.givePoints(player, 100);
-                Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2);
+                Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2,true);
                 break;
 
             case Wolf.en_officer:
                 Wolf.Player.givePoints(player, 400);
-                Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2);
+                Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2,true);
                 break;
 
             case Wolf.en_mutant:
                 Wolf.Player.givePoints(player, 700);
-                Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2);
+                Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2,true);
                 break;
 
             case Wolf.en_ss:
                 Wolf.Player.givePoints(player, 500);
                 if (player.items & Wolf.ITEM_WEAPON_3) { // have a schmeiser?
-                    Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2);
+                    Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_clip2,true);
                 } else {
-                    Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_machinegun);
+                    Wolf.Powerups.spawn(level, tilex, tiley, Wolf.pow_machinegun,true);
                 }
                 break;
 
