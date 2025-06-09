@@ -1213,28 +1213,8 @@ Wolf.Game = (function() {
         var offsetX = padding + (availableWidth - (levelWidth * cellSize)) / 2;
         var offsetY = padding + (availableHeight - (levelHeight * cellSize)) / 2;
         
-        // Draw secret areas first (as background)
-        for (var x = 0; x < levelWidth; x++) {
-            for (var y = levelHeight - 1; y >= 0; y--) {
-                if (level.tileMap[x][y] & Wolf.SECRET_TILE) {
-                    ctx.fillStyle = "#ff0";
-                    ctx.fillRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
-                }
-            }
-        }
-        
-        // Draw walls as black lines
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
-        
-        for (var x = 0; x < levelWidth; x++) {
-            for (var y = levelHeight - 1; y >= 0; y--) {
-                if (level.tileMap[x][y] & Wolf.SOLID_TILE) {
-                    // Draw cell border
-                    ctx.strokeRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
-                }
-            }
-        }
+        // Draw map elements
+        drawMapElements(ctx, level, levelWidth, levelHeight, cellSize, offsetX, offsetY);
         
         // Draw player position
         var playerX = offsetX + (player.position.x >> Wolf.TILESHIFT) * cellSize;
@@ -1256,6 +1236,39 @@ Wolf.Game = (function() {
             playerY + cellSize/2 + Math.sin(Wolf.FINE2RAD(player.angle)) * cellSize
         );
         ctx.stroke();
+    }
+
+    function drawMapElements(ctx, level, levelWidth, levelHeight, cellSize, offsetX, offsetY) {
+        // Draw secret areas first (as background)
+        for (var x = 0; x < levelWidth; x++) {
+            drawSecretAreaColumn(ctx, level, x, levelHeight, cellSize, offsetX, offsetY);
+        }
+        
+        // Draw walls as black lines
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        
+        for (var x = 0; x < levelWidth; x++) {
+            drawWallColumn(ctx, level, x, levelHeight, cellSize, offsetX, offsetY);
+        }
+    }
+
+    function drawSecretAreaColumn(ctx, level, x, levelHeight, cellSize, offsetX, offsetY) {
+        for (var y = levelHeight - 1; y >= 0; y--) {
+            if (level.tileMap[x][y] & Wolf.SECRET_TILE) {
+                ctx.fillStyle = "#ff0";
+                ctx.fillRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    function drawWallColumn(ctx, level, x, levelHeight, cellSize, offsetX, offsetY) {
+        for (var y = levelHeight - 1; y >= 0; y--) {
+            if (level.tileMap[x][y] & Wolf.SOLID_TILE) {
+                // Draw cell border
+                ctx.strokeRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
+            }
+        }
     }
     
     /**
