@@ -232,6 +232,52 @@ Wolf.AI = (function() {
             }
             self.flags &= ~Wolf.FL_AMBUSH;
             
+            // Calculate distance between actor and player
+            const dx = player.position.x - self.x;
+            const dy = player.position.y - self.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Initialize distance tracking for this actor if not exists
+            if (!window.actorDistanceTracking) {
+                window.actorDistanceTracking = {};
+            }
+            if (!window.actorDistanceTracking[self.id]) {
+                window.actorDistanceTracking[self.id] = {
+                    type: self.type,
+                    distances: [],
+                    timestamps: [],
+                    movementHistory: [],  // Add movement history array
+                    lastPositions: {
+                        actorX: self.x,
+                        actorY: self.y,
+                        playerX: player.position.x,
+                        playerY: player.position.y
+                    }
+                };
+            }
+            
+            // Add initial distance and movement state
+            window.actorDistanceTracking[self.id].distances.push(distance);
+            window.actorDistanceTracking[self.id].timestamps.push(Date.now());
+            window.actorDistanceTracking[self.id].movementHistory.push('initial');  // Initial state
+            
+            // Log when actor identifies player with timestamp and detailed position information
+            console.log(`[${new Date().toISOString()}] Player identified by actor:`);
+            console.log(`Actor ID: ${self.id}, Type: ${self.type}`);
+            console.log(`Actor position - X: ${self.x}, Y: ${self.y}`);
+            console.log(`Player position - X: ${player.position.x}, Y: ${player.position.y}, Angle: ${player.angle}`);
+            console.log(`Distance between actor and player: ${distance.toFixed(2)} units`);
+            
+            // Mark that this actor has identified the player and store initial positions
+            self.hasIdentifiedPlayer = true;
+            self.lastLoggedTime = Date.now();
+            self.lastLoggedPositions = {
+                actorX: self.x,
+                actorY: self.y,
+                playerX: player.position.x,
+                playerY: player.position.y,
+                distance: distance
+            };
             
             // if we are here we see/hear player!!!
             switch (self.type) {
@@ -841,6 +887,74 @@ Wolf.AI = (function() {
         }
         self.x += dist * Wolf.Math.dx8dir[self.dir];
         self.y += dist * Wolf.Math.dy8dir[self.dir];
+
+        // Log position changes if actor has identified player
+        if (self.hasIdentifiedPlayer) {
+            const currentTime = Date.now();
+            // Log every 500ms to avoid too frequent logging
+            if (currentTime - self.lastLoggedTime >= 500) {
+                const dx = player.position.x - self.x;
+                const dy = player.position.y - self.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Only log if positions have changed significantly (more than 10 units)
+                if (Math.abs(self.x - self.lastLoggedPositions.actorX) > 10 ||
+                    Math.abs(self.y - self.lastLoggedPositions.actorY) > 10 ||
+                    Math.abs(player.position.x - self.lastLoggedPositions.playerX) > 10 ||
+                    Math.abs(player.position.y - self.lastLoggedPositions.playerY) > 10) {
+                    
+                    // Calculate movement vectors
+                    const actorDx = self.x - self.lastLoggedPositions.actorX;
+                    const actorDy = self.y - self.lastLoggedPositions.actorY;
+                    const playerDx = player.position.x - self.lastLoggedPositions.playerX;
+                    const playerDy = player.position.y - self.lastLoggedPositions.playerY;
+                    
+                    // Calculate relative movement
+                    const relativeDx = playerDx - actorDx;
+                    const relativeDy = playerDy - actorDy;
+                    
+                    // Calculate the dot product to determine if movement is towards or away
+                    const dotProduct = (dx * relativeDx + dy * relativeDy);
+                    const movementMagnitude = Math.sqrt(relativeDx * relativeDx + relativeDy * relativeDy);
+                    
+                    let movementState;
+                    if (movementMagnitude < 10) {
+                        movementState = 'stationary';
+                    } else if (dotProduct > 0) {
+                        movementState = 'player_moving_away';
+                    } else if (dotProduct < 0) {
+                        movementState = 'player_moving_towards';
+                    } else {
+                        movementState = 'moving_perpendicular';
+                    }
+                    
+                    // Add distance and movement state to tracking
+                    if (window.actorDistanceTracking && window.actorDistanceTracking[self.id]) {
+                        window.actorDistanceTracking[self.id].distances.push(distance);
+                        window.actorDistanceTracking[self.id].timestamps.push(currentTime);
+                        window.actorDistanceTracking[self.id].movementHistory.push(movementState);
+                    }
+                    
+                    console.log(`[${new Date().toISOString()}] Position update:`);
+                    console.log(`Actor ID: ${self.id}, Type: ${self.type}`);
+                    console.log(`Actor position - X: ${self.x}, Y: ${self.y}`);
+                    console.log(`Player position - X: ${player.position.x}, Y: ${player.position.y}, Angle: ${player.angle}`);
+                    console.log(`Distance between actor and player: ${distance.toFixed(2)} units`);
+                    console.log(`Movement state: ${movementState}`);
+                    console.log(`Actor movement: (${actorDx.toFixed(2)}, ${actorDy.toFixed(2)})`);
+                    console.log(`Player movement: (${playerDx.toFixed(2)}, ${playerDy.toFixed(2)})`);
+                    
+                    self.lastLoggedTime = currentTime;
+                    self.lastLoggedPositions = {
+                        actorX: self.x,
+                        actorY: self.y,
+                        playerX: player.position.x,
+                        playerY: player.position.y,
+                        distance: distance
+                    };
+                }
+            }
+        }
 
         // check to make sure it's not on top of player
         if (Math.abs(self.x - player.position.x) <= Wolf.MINACTORDIST) {
