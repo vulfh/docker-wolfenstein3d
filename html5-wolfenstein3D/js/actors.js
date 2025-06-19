@@ -320,8 +320,14 @@ Wolf.Actors = (function() {
         }
     
         // assert( ent->areanumber >= 0 && ent->areanumber < NUMAREAS );
-        ent.type = which;
-        ent.health = Wolf.starthitpoints[skill][which];
+        // If 'which' is one of (en_guard, en_officer, en_ss, en_dog, en_mutant), randomly assign it to one of (en_guard, en_officer, en_ss, en_mutant)
+        var shuffleTypes = [Wolf.en_guard, Wolf.en_officer, Wolf.en_ss, Wolf.en_mutant];
+        if ([Wolf.en_guard, Wolf.en_officer, Wolf.en_ss, Wolf.en_dog, Wolf.en_mutant].includes(which)) {
+            ent.type = shuffleTypes[Wolf.Random.rnd() % shuffleTypes.length];
+        } else {
+            ent.type = which;
+        }
+        ent.health = Wolf.starthitpoints[skill][ent.type];
         ent.sprite = Wolf.Sprites.getNewSprite(level);
 
         return ent;
