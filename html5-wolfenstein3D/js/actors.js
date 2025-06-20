@@ -320,9 +320,10 @@ Wolf.Actors = (function() {
         }
     
         // assert( ent->areanumber >= 0 && ent->areanumber < NUMAREAS );
-        // If 'which' is one of (en_guard, en_officer, en_ss, en_dog, en_mutant), randomly assign it to one of (en_guard, en_officer, en_ss, en_mutant)
-        var shuffleTypes = [Wolf.en_guard, Wolf.en_officer, Wolf.en_ss, Wolf.en_mutant];
-        if ([Wolf.en_guard, Wolf.en_officer, Wolf.en_ss, Wolf.en_dog, Wolf.en_mutant].includes(which)) {
+        // Only shuffle actors at the highest skill level
+        const shuffleTypes = [Wolf.en_guard, Wolf.en_officer, Wolf.en_ss, Wolf.en_mutant];
+        const highestSkill = 3; // Adjust if your game uses a different max skill value
+        if (skill === highestSkill && [Wolf.en_guard, Wolf.en_officer, Wolf.en_ss, Wolf.en_dog, Wolf.en_mutant].includes(which)) {
             ent.type = shuffleTypes[Wolf.Random.rnd() % shuffleTypes.length];
         } else {
             ent.type = which;
