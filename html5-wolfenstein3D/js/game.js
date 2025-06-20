@@ -22,6 +22,8 @@ Wolf.Game = (function() {
         gd_hard         : 3
     });
 
+    const ELEVATOR_COLOR = "#0f0";
+
     var rendering = false,
         playing = false,
         fsInit = false,
@@ -1246,11 +1248,25 @@ Wolf.Game = (function() {
         ctx.stroke();
     }
 
+    function draw_elevator(ctx, level, levelWidth, levelHeight, cellSize, offsetX, offsetY) {
+        for (var x = 0; x < levelWidth; x++) {
+            for (var y = levelHeight - 1; y >= 0; y--) {
+                if (level.tileMap[x][y] & Wolf.ELEVATOR_TILE) {
+                    ctx.fillStyle = ELEVATOR_COLOR;
+                    ctx.fillRect(offsetX + x * cellSize, offsetY + (levelHeight - 1 - y) * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+    }
+
     function drawMapElements(ctx, level, levelWidth, levelHeight, cellSize, offsetX, offsetY) {
         // Draw secret areas first (as background)
         for (var x = 0; x < levelWidth; x++) {
             drawSecretAreaColumn(ctx, level, x, levelHeight, cellSize, offsetX, offsetY);
         }
+        
+        // Draw elevator tiles in green
+        draw_elevator(ctx, level, levelWidth, levelHeight, cellSize, offsetX, offsetY);
         
         // Draw walls as black lines
         ctx.strokeStyle = "#000";
