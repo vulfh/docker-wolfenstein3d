@@ -198,7 +198,7 @@ Wolf.Powerups = (function() {
                 break;
 
             case Wolf.pow_clip2:
-                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 4)) {
+                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 5)) {
                     return false;
                 }
                 Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/031.wav", 1, Wolf.ATTN_NORM, 0);
@@ -384,7 +384,7 @@ Wolf.Powerups = (function() {
                 break;
 
             case Wolf.pow_clip2:
-                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 4)) {
+                if (!Wolf.Player.giveAmmo(player, Wolf.AMMO_BULLETS, 5)) {
                     return false;
                 }
                 Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_ITEM, "lsfx/031.wav", 1, Wolf.ATTN_NORM, 0);
