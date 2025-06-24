@@ -440,6 +440,14 @@ Wolf.ActorAI = (function() {
             tilex = self.tile.x = self.x >> Wolf.TILESHIFT; // drop item on center, 
             tiley = self.tile.y = self.y >> Wolf.TILESHIFT;
 
+        // Log if this actor had identified the player
+        if (self.hasIdentifiedPlayer) {
+            console.log(`[${new Date().toISOString()}] Actor that identified player was killed:`);
+            console.log(`Actor ID: ${self.id}, Type: ${self.type}`);
+            console.log(`Actor position at death - X: ${self.x}, Y: ${self.y}`);
+            console.log(`Player position at actor death - X: ${player.position.x}, Y: ${player.position.y}, Angle: ${player.angle}`);
+        }
+
         switch (self.type) {
             case Wolf.en_guard:
                 Wolf.Player.givePoints(player, 100);

@@ -799,6 +799,14 @@ Wolf.Game = (function() {
             
         playing = false;
 
+        // Store actor distance tracking data in localStorage
+        if (window.actorDistanceTracking) {
+            const storageKey = `episode${game.episodeNum + 1}-floor${game.levelNum + 1}`;
+            localStorage.setItem(storageKey, JSON.stringify(window.actorDistanceTracking));
+            // Clear the tracking data for the next level
+            window.actorDistanceTracking = {};
+        }
+
         Wolf.Sound.startMusic("music/URAHERO.ogg");
         
         $("#game .renderer").hide();
