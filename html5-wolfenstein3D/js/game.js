@@ -800,11 +800,39 @@ Wolf.Game = (function() {
         playing = false;
 
         // Store actor distance tracking data in localStorage
-        if (window.actorDistanceTracking) {
+        if (window.actorActivityStatistics) {
+            // Aggregate average damage and hits per actor type
+            var typeStats = {};
+            var typeCounts = {};
+            // First, sum up damage and hits for each type
+            for (var actorId in window.actorActivityStatistics) {
+                if (!window.actorActivityStatistics.hasOwnProperty(actorId)) continue;
+                var entry = window.actorActivityStatistics[actorId];
+                var type = entry.type;
+                if (typeof type === 'undefined') continue;
+                if (!typeStats[type]) {
+                    typeStats[type] = { totalDamage: 0, totalHits: 0 };
+                    typeCounts[type] = 0;
+                }
+                typeStats[type].totalDamage += entry.damage || 0;
+                typeStats[type].totalHits += entry.hits || 0;
+                typeCounts[type]++;
+            }
+            // Now, calculate averages and store in the statistics object
+            window.actorActivityStatistics._typeAverages = {};
+            for (var type in typeStats) {
+                if (!typeStats.hasOwnProperty(type)) continue;
+                var avgDamage = typeStats[type].totalDamage / typeCounts[type];
+                var avgHits = typeStats[type].totalHits / typeCounts[type];
+                window.actorActivityStatistics._typeAverages[type] = {
+                    averageDamage: avgDamage,
+                    averageHits: avgHits
+                };
+            }
             const storageKey = `episode${game.episodeNum + 1}-floor${game.levelNum + 1}`;
-            localStorage.setItem(storageKey, JSON.stringify(window.actorDistanceTracking));
+            localStorage.setItem(storageKey, JSON.stringify(window.actorActivityStatistics));
             // Clear the tracking data for the next level
-            window.actorDistanceTracking = {};
+            window.actorActivityStatistics = {};
         }
 
         Wolf.Sound.startMusic("music/URAHERO.ogg");

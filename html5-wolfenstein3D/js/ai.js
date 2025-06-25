@@ -238,11 +238,11 @@ Wolf.AI = (function() {
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             // Initialize distance tracking for this actor if not exists
-            if (!window.actorDistanceTracking) {
-                window.actorDistanceTracking = {};
+            if (!window.actorActivityStatistics) {
+                window.actorActivityStatistics = {};
             }
-            if (!window.actorDistanceTracking[self.id]) {
-                window.actorDistanceTracking[self.id] = {
+            if (!window.actorActivityStatistics[self.id]) {
+                window.actorActivityStatistics[self.id] = {
                     type: self.type,
                     distances: [],
                     timestamps: [],
@@ -252,14 +252,16 @@ Wolf.AI = (function() {
                         actorY: self.y,
                         playerX: player.position.x,
                         playerY: player.position.y
-                    }
+                    },
+                    hits: 0,
+                    damage: 0
                 };
             }
             
             // Add initial distance and movement state
-            window.actorDistanceTracking[self.id].distances.push(distance);
-            window.actorDistanceTracking[self.id].timestamps.push(Date.now());
-            window.actorDistanceTracking[self.id].movementHistory.push('initial');  // Initial state
+            window.actorActivityStatistics[self.id].distances.push(distance);
+            window.actorActivityStatistics[self.id].timestamps.push(Date.now());
+            window.actorActivityStatistics[self.id].movementHistory.push('initial');  // Initial state
             
             // Log when actor identifies player with timestamp and detailed position information
             console.log(`[${new Date().toISOString()}] Player identified by actor:`);
@@ -929,10 +931,10 @@ Wolf.AI = (function() {
                     }
                     
                     // Add distance and movement state to tracking
-                    if (window.actorDistanceTracking && window.actorDistanceTracking[self.id]) {
-                        window.actorDistanceTracking[self.id].distances.push(distance);
-                        window.actorDistanceTracking[self.id].timestamps.push(currentTime);
-                        window.actorDistanceTracking[self.id].movementHistory.push(movementState);
+                    if (window.actorActivityStatistics && window.actorActivityStatistics[self.id]) {
+                        window.actorActivityStatistics[self.id].distances.push(distance);
+                        window.actorActivityStatistics[self.id].timestamps.push(currentTime);
+                        window.actorActivityStatistics[self.id].movementHistory.push(movementState);
                     }
                     
                     console.log(`[${new Date().toISOString()}] Position update:`);

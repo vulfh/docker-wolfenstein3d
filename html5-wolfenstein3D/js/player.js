@@ -607,6 +607,18 @@ Wolf.Player = (function() {
         var dx, dy,
             angle, playerAngle, deltaAngle;
         
+        // Track successful hits by actor and accumulate damage
+        if (attacker && typeof attacker.id !== 'undefined' && window.actorActivityStatistics && window.actorActivityStatistics[attacker.id]) {
+            if (!window.actorActivityStatistics[attacker.id].hits) {
+                window.actorActivityStatistics[attacker.id].hits = 0;
+            }
+            window.actorActivityStatistics[attacker.id].hits += 1;
+            if (!window.actorActivityStatistics[attacker.id].damage) {
+                window.actorActivityStatistics[attacker.id].damage = 0;
+            }
+            window.actorActivityStatistics[attacker.id].damage += points;
+        }
+
         if (player.playstate == Wolf.ex_dead || player.playstate == Wolf.ex_complete || self.playstate == Wolf.ex_victory) {
             return;
         }
