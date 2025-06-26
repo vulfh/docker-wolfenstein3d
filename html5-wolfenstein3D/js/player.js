@@ -619,6 +619,11 @@ Wolf.Player = (function() {
             window.actorActivityStatistics[attacker.id].damage += points;
         }
 
+        // Set playerKilled to false at the start of damage (unless already dead)
+        if (window.actorActivityStatistics) {
+            window.actorActivityStatistics.playerKilled = false;
+        }
+
         if (player.playstate == Wolf.ex_dead || player.playstate == Wolf.ex_complete || self.playstate == Wolf.ex_victory) {
             return;
         }
@@ -670,6 +675,10 @@ Wolf.Player = (function() {
             player.health = 0;
             player.playstate = Wolf.ex_dead;
             Wolf.Sound.startSound(null, null, 0, Wolf.CHAN_BODY, "lsfx/009.wav", 1, Wolf.ATTN_NORM, 0);
+            // Set playerKilled to true when player dies
+            if (window.actorActivityStatistics) {
+                window.actorActivityStatistics.playerKilled = true;
+            }
         }
 
         // red screen flash

@@ -211,6 +211,8 @@ Wolf.Game = (function() {
                         $("#game .renderer .death").css("display", "none");
 
                         if (game.player.lives > 0) {
+                            // Save statistics for failed attempt (life lost)
+                            saveActorStatistics(game);
                             lives = game.player.lives;
                             score = game.player.startScore;
                             game.level = Wolf.Level.reload(level);
@@ -324,6 +326,8 @@ Wolf.Game = (function() {
      * @param {object} game The game object
      */
     function gameOver(game) {
+        // Save statistics if present (player killed)
+        saveActorStatistics(game);
         playing = false;
         rendering = false;
         
@@ -800,40 +804,7 @@ Wolf.Game = (function() {
         playing = false;
 
         // Store actor distance tracking data in localStorage
-        if (window.actorActivityStatistics) {
-            // Aggregate average damage and hits per actor type
-            var typeStats = {};
-            var typeCounts = {};
-            // First, sum up damage and hits for each type
-            for (var actorId in window.actorActivityStatistics) {
-                if (!window.actorActivityStatistics.hasOwnProperty(actorId)) continue;
-                var entry = window.actorActivityStatistics[actorId];
-                var type = entry.type;
-                if (typeof type === 'undefined') continue;
-                if (!typeStats[type]) {
-                    typeStats[type] = { totalDamage: 0, totalHits: 0 };
-                    typeCounts[type] = 0;
-                }
-                typeStats[type].totalDamage += entry.damage || 0;
-                typeStats[type].totalHits += entry.hits || 0;
-                typeCounts[type]++;
-            }
-            // Now, calculate averages and store in the statistics object
-            window.actorActivityStatistics._typeAverages = {};
-            for (var type in typeStats) {
-                if (!typeStats.hasOwnProperty(type)) continue;
-                var avgDamage = typeStats[type].totalDamage / typeCounts[type];
-                var avgHits = typeStats[type].totalHits / typeCounts[type];
-                window.actorActivityStatistics._typeAverages[type] = {
-                    averageDamage: avgDamage,
-                    averageHits: avgHits
-                };
-            }
-            const storageKey = `episode${game.episodeNum + 1}-floor${game.levelNum + 1}`;
-            localStorage.setItem(storageKey, JSON.stringify(window.actorActivityStatistics));
-            // Clear the tracking data for the next level
-            window.actorActivityStatistics = {};
-        }
+        saveActorStatistics(game);
 
         Wolf.Sound.startMusic("music/URAHERO.ogg");
         
@@ -1806,6 +1777,56 @@ Wolf.Game = (function() {
         } catch (e) {
             console.error('Failed to load game:', e);
             return false;
+        }
+    }
+   
+    // Helper to save actorActivityStatistics to localStorage as an array per episode-floor
+    function saveActorStatistics(game) {
+        if (window.actorActivityStatistics) {
+            // Aggregate average damage and hits per actor type
+            var typeStats = {};
+            var typeCounts = {};
+            // First, sum up damage and hits for each type
+            for (var actorId in window.actorActivityStatistics) {
+                if (!window.actorActivityStatistics.hasOwnProperty(actorId)) continue;
+                var entry = window.actorActivityStatistics[actorId];
+                var type = entry.type;
+                if (typeof type === 'undefined') continue;
+                if (!typeStats[type]) {
+                    typeStats[type] = { totalDamage: 0, totalHits: 0 };
+                    typeCounts[type] = 0;
+                }
+                typeStats[type].totalDamage += entry.damage || 0;
+                typeStats[type].totalHits += entry.hits || 0;
+                typeCounts[type]++;
+            }
+            // Now, calculate averages and store in the statistics object
+            window.actorActivityStatistics._typeAverages = {};
+            for (var type in typeStats) {
+                if (!typeStats.hasOwnProperty(type)) continue;
+                var avgDamage = typeStats[type].totalDamage / typeCounts[type];
+                var avgHits = typeStats[type].totalHits / typeCounts[type];
+                window.actorActivityStatistics._typeAverages[type] = {
+                    averageDamage: avgDamage,
+                    averageHits: avgHits
+                };
+            }
+            const storageKey = `episode${game.episodeNum + 1}-floor${game.levelNum + 1}`;
+            let statsArray = [];
+            try {
+                const existing = localStorage.getItem(storageKey);
+                if (existing) {
+                    statsArray = JSON.parse(existing);
+                    if (!Array.isArray(statsArray)) {
+                        statsArray = [];
+                    }
+                }
+            } catch (e) {
+                statsArray = [];
+            }
+            statsArray.push(JSON.parse(JSON.stringify(window.actorActivityStatistics)));
+            localStorage.setItem(storageKey, JSON.stringify(statsArray));
+            window.actorActivityStatistics = {};
         }
     }
    
