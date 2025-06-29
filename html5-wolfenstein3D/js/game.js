@@ -1429,6 +1429,29 @@ Wolf.Game = (function() {
     }
     */
    
+    // Helper to check if localStorage is available and working
+    function checkLocalStorage() {
+        try {
+            const testKey = 'wolfenstein_test';
+            const testValue = 'test_value_' + Date.now();
+            
+            localStorage.setItem(testKey, testValue);
+            const retrieved = localStorage.getItem(testKey);
+            localStorage.removeItem(testKey);
+            
+            if (retrieved === testValue) {
+                console.log('localStorage is working correctly');
+                return true;
+            } else {
+                console.error('localStorage test failed - retrieved value does not match');
+                return false;
+            }
+        } catch (e) {
+            console.error('localStorage test failed with error:', e);
+            return false;
+        }
+    }
+   
     function saveGameState() {
         try {
             // Check if currentGame and player are properly initialized
@@ -1568,7 +1591,7 @@ Wolf.Game = (function() {
                     };
                 }).filter(actor => actor !== null)
             };
-
+            
             localStorage.setItem('wolfenstein_savegame', JSON.stringify(gameState));
             return true;
         } catch (e) {
@@ -1782,10 +1805,30 @@ Wolf.Game = (function() {
    
     // Helper to save actorActivityStatistics to localStorage as an array per episode-floor
     function saveActorStatistics(game) {
-        if (window.actorActivityStatistics) {
+        console.log('saveActorStatistics called with game:', game);
+        console.log('window.actorActivityStatistics:', window.actorActivityStatistics);
+        
+        if (!game) {
+            console.error('saveActorStatistics: game parameter is null/undefined');
+            return;
+        }
+        
+        if (!window.actorActivityStatistics) {
+            console.warn('saveActorStatistics: window.actorActivityStatistics is not initialized');
+            return;
+        }
+        
+        // Check localStorage availability
+        if (!checkLocalStorage()) {
+            console.error('localStorage is not available - cannot save actor statistics');
+            return;
+        }
+        
+        try {
             // Aggregate average damage and hits per actor type
             var typeStats = {};
             var typeCounts = {};
+            var totalTypeCounts = {};
             // First, sum up damage and hits for each type
             for (var actorId in window.actorActivityStatistics) {
                 if (!window.actorActivityStatistics.hasOwnProperty(actorId)) continue;
@@ -1795,38 +1838,82 @@ Wolf.Game = (function() {
                 if (!typeStats[type]) {
                     typeStats[type] = { totalDamage: 0, totalHits: 0 };
                     typeCounts[type] = 0;
+                    totalTypeCounts[type] = 0;
                 }
                 typeStats[type].totalDamage += entry.damage || 0;
                 typeStats[type].totalHits += entry.hits || 0;
                 typeCounts[type]++;
             }
+            
+            // Get total count of actors of each type from the level
+            if (game.level && game.level.state && game.level.state.guards) {
+                game.level.state.guards.forEach(actor => {
+                    if (actor && typeof actor.type !== 'undefined') {
+                        if (!totalTypeCounts[actor.type]) {
+                            totalTypeCounts[actor.type] = 0;
+                        }
+                        totalTypeCounts[actor.type]++;
+                    }
+                });
+            }
+            
             // Now, calculate averages and store in the statistics object
             window.actorActivityStatistics._typeAverages = {};
+            var totalActors = 0;
             for (var type in typeStats) {
                 if (!typeStats.hasOwnProperty(type)) continue;
-                var avgDamage = typeStats[type].totalDamage / typeCounts[type];
-                var avgHits = typeStats[type].totalHits / typeCounts[type];
+                var totalActorsOfType = totalTypeCounts[type] || typeCounts[type];
+                var avgDamage = totalActorsOfType > 0 ? typeStats[type].totalDamage / totalActorsOfType : 0;
+                var avgHits = totalActorsOfType > 0 ? typeStats[type].totalHits / totalActorsOfType : 0;
                 window.actorActivityStatistics._typeAverages[type] = {
                     averageDamage: avgDamage,
-                    averageHits: avgHits
+                    averageHits: avgHits,
+                    actorCount: totalActorsOfType,
+                    activeActors: typeCounts[type] // Actors that actually dealt damage/hits
                 };
+                totalActors += totalActorsOfType;
             }
+            // Add total actor count to the statistics
+            window.actorActivityStatistics._typeAverages.totalActors = totalActors;
+            
             const storageKey = `episode${game.episodeNum + 1}-floor${game.levelNum + 1}`;
+            console.log('Storage key:', storageKey);
+            
             let statsArray = [];
             try {
                 const existing = localStorage.getItem(storageKey);
+                console.log('Existing localStorage data:', existing);
                 if (existing) {
                     statsArray = JSON.parse(existing);
                     if (!Array.isArray(statsArray)) {
+                        console.warn('Existing data is not an array, resetting to empty array');
                         statsArray = [];
                     }
                 }
             } catch (e) {
+                console.error('Error parsing existing localStorage data:', e);
                 statsArray = [];
             }
-            statsArray.push(JSON.parse(JSON.stringify(window.actorActivityStatistics)));
-            localStorage.setItem(storageKey, JSON.stringify(statsArray));
+            
+            const statsToSave = JSON.parse(JSON.stringify(window.actorActivityStatistics));
+            console.log('Stats to save:', statsToSave);
+            
+            statsArray.push(statsToSave);
+            console.log('Final statsArray to save:', statsArray);
+            
+            const jsonString = JSON.stringify(statsArray);
+            console.log('JSON string length:', jsonString.length);
+            
+            localStorage.setItem(storageKey, jsonString);
+            console.log('Successfully saved to localStorage with key:', storageKey);
+            
+            // Verify the save worked
+            const verifyData = localStorage.getItem(storageKey);
+            console.log('Verification - retrieved data:', verifyData);
+            
             window.actorActivityStatistics = {};
+        } catch (e) {
+            console.error('Error in saveActorStatistics:', e);
         }
     }
    
